@@ -16,6 +16,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -56,6 +58,8 @@ func main() {
 
 	// Setup router
 	r := chi.NewRouter()
+	webDir := resolvePath("./web", "./backend/web")
+	uploadDir := resolvePath(cfg.UploadDir, "./backend/uploads")
 
 	// Custom CORS
 	r.Use(appMiddleware.CORS)
@@ -65,13 +69,13 @@ func main() {
 	r.Use(middleware.Recoverer)
 
 	// Static files (uploads)
-	r.Handle("/uploads/*", http.StripPrefix("/uploads", http.FileServer(http.Dir(cfg.UploadDir))))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads", http.FileServer(http.Dir(uploadDir))))
 
 	// Web Admin Panel
-	r.Handle("/web/*", http.StripPrefix("/web", http.FileServer(http.Dir("./web"))))
+	r.Handle("/web/*", http.StripPrefix("/web", http.FileServer(http.Dir(webDir))))
 	// Serve index.html for /web
 	r.Get("/web", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./web/index.html")
+		http.ServeFile(w, r, filepath.Join(webDir, "index.html"))
 	})
 
 	// Swagger documentation
@@ -140,4 +144,14 @@ func main() {
 	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
 		log.Fatal("Server failed:", err)
 	}
+}
+
+func resolvePath(paths ...string) string {
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	return paths[0]
 }
