@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -37,11 +38,27 @@ func isAllowedOrigin(r *http.Request, origin string) bool {
 		return false
 	}
 
+	// Local development
 	if isLocalDevHost(parsedOrigin.Hostname()) {
 		return true
 	}
 
-	return sameOrigin(r, parsedOrigin)
+	// Same origin
+	if sameOrigin(r, parsedOrigin) {
+		return true
+	}
+
+	// Allowed domains from env (comma-separated)
+	allowedDomains := os.Getenv("ALLOWED_DOMAINS")
+	if allowedDomains != "" {
+		for _, domain := range strings.Split(allowedDomains, ",") {
+			if strings.TrimSpace(domain) == parsedOrigin.Hostname() {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func isLocalDevHost(host string) bool {

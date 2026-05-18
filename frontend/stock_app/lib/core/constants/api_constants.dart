@@ -21,15 +21,15 @@ class ApiConstants {
 
   static String _resolveWebBaseUrl() {
     final host = Uri.base.host;
-    final path = Uri.base.path;
     final isLocalHost = host == 'localhost' || host == '127.0.0.1';
-    final isServedByBackend = path.startsWith('/web') || Uri.base.port == 8080;
 
-    if (isServedByBackend || !isLocalHost) {
+    // En producción (no localhost), usar same-origin
+    if (!isLocalHost) {
       return '/api/v1';
     }
 
-    return 'http://$host:8080/api/v1';
+    // En desarrollo local, usar localhost:8080
+    return 'http://localhost:8080/api/v1';
   }
 
   // Auth

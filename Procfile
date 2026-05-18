@@ -1,1 +1,1 @@
-web: ./backend/app
+web: ./app
