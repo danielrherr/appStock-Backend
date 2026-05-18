@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockApp Admin - Categorías</title>
+    <link rel="stylesheet" href="/web/css/styles.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">StockApp Admin</div>
+            <ul class="sidebar-nav">
+                <li><a href="/web/dashboard.html">Dashboard</a></li>
+                <li><a href="/web/productos.html">Productos</a></li>
+                <li><a href="/web/categorias.html" class="active">Categorías</a></li>
+                <li><a href="/web/movimientos.html">Movimientos</a></li>
+                <li><a href="#" id="logoutBtn" class="logout">Cerrar Sesión</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">Categorías</h1>
+                <button class="btn-primary" onclick="openModal()" style="width: auto;">+ Nueva Categoría</button>
+            </div>
+
+            <div class="toolbar">
+                <input type="text" class="search-input" id="searchInput" placeholder="Buscar categorías...">
+                <button class="btn-secondary" onclick="loadCategorias()">Buscar</button>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Productos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoriasTable">
+                        <tr><td colspan="5" class="loading">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Categoría -->
+    <div class="modal-overlay" id="categoriaModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nueva Categoría</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="categoriaForm">
+                <input type="hidden" id="categoriaId">
+                <div class="form-group">
+                    <label for="nombre">Nombre *</label>
+                    <input type="text" id="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="descripcion">Descripción</label>
+                    <textarea id="descripcion" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/web/js/app.js"></script>
+    <script>
+        let currentEditingId = null;
+
+        // Check auth
+        if (!requireAuth()) {}
+
+        // Load on init
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadCategorias();
+
+            // Check for new action
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('action') === 'new') {
+                openModal();
+            }
+        });
+
+        async function loadCategorias() {
+            try {
+                const categorias = (await apiCall('/categorias'))?.data ?? [];
+                const tbody = document.getElementById('categoriasTable');
+
+                if (categorias.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay categorías</td></tr>';
+                    return;
+                }
+
+                // Filter by search
+                const search = document.getElementById('searchInput').value.toLowerCase();
+                const filtered = categorias.filter(c =>
+                    c.nombre.toLowerCase().includes(search) ||
+                    (c.descripcion && c.descripcion.toLowerCase().includes(search))
+                );
+
+                tbody.innerHTML = filtered.map(c => `
+                    <tr>
+                        <td>${c.id.substring(0, 8)}</td>
+                        <td>${c.nombre}</td>
+                        <td>${c.descripcion || '-'}</td>
+                        <td>${c.productos_count || 0}</td>
+                        <td class="actions">
+                            <button class="edit-btn" onclick="editCategoria('${c.id}')">Editar</button>
+                            <button class="delete-btn" onclick="deleteCategoria('${c.id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading categorias:', err);
+                showToast('Error al cargar categorías', 'error');
+            }
+        }
+
+        function openModal(categoria = null) {
+            const modal = document.getElementById('categoriaModal');
+            const form = document.getElementById('categoriaForm');
+            const title = document.getElementById('modalTitle');
+
+            if (categoria) {
+                title.textContent = 'Editar Categoría';
+                currentEditingId = categoria.id;
+                document.getElementById('nombre').value = categoria.nombre;
+                document.getElementById('descripcion').value = categoria.descripcion || '';
+            } else {
+                title.textContent = 'Nueva Categoría';
+                currentEditingId = null;
+                form.reset();
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('categoriaModal').classList.remove('active');
+        }
+
+        async function editCategoria(id) {
+            try {
+                const response = await apiCall(`/categorias/${id}`);
+                openModal(response.data);
+            } catch (err) {
+                showToast('Error al cargar categoría', 'error');
+            }
+        }
+
+        async function deleteCategoria(id) {
+            if (!confirm('¿Estás seguro de eliminar esta categoría?')) return;
+
+            try {
+                await apiCall(`/categorias/${id}`, { method: 'DELETE' });
+                showToast('Categoría eliminada');
+                loadCategorias();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        document.getElementById('categoriaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                nombre: document.getElementById('nombre').value,
+                descripcion: document.getElementById('descripcion').value
+            };
+
+            try {
+                if (currentEditingId) {
+                    await apiCall(`/categorias/${currentEditingId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(data)
+                    });
+                    showToast('Categoría actualizada');
+                } else {
+                    await apiCall('/categorias', {
+                        method: 'POST',
+                        body: JSON.stringify(data)
+                    });
+                    showToast('Categoría creada');
+                }
+                closeModal();
+                loadCategorias();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        // Search on Enter
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadCategorias();
+        });
+    </script>
+</body>
+</html>

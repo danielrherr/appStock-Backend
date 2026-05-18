@@ -1,0 +1,833 @@
+basePath: /api/v1
+definitions:
+  model.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/model.Usuario'
+    type: object
+  model.Categoria:
+    properties:
+      created_at:
+        type: string
+      descripcion:
+        type: string
+      id:
+        type: string
+      nombre:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.CreateCategoriaRequest:
+    properties:
+      descripcion:
+        type: string
+      nombre:
+        type: string
+    required:
+    - nombre
+    type: object
+  model.CreateMovimientoRequest:
+    properties:
+      cantidad:
+        minimum: 1
+        type: integer
+      motivo:
+        type: string
+      producto_id:
+        type: string
+      tipo:
+        allOf:
+        - $ref: '#/definitions/model.TipoMovimiento'
+        enum:
+        - entrada
+        - salida
+    required:
+    - cantidad
+    - producto_id
+    - tipo
+    type: object
+  model.CreateProductoRequest:
+    properties:
+      categoria_id:
+        type: string
+      codigo:
+        type: string
+      codigo_barras:
+        type: string
+      descripcion:
+        type: string
+      nombre:
+        type: string
+      precio:
+        type: number
+      stock_actual:
+        type: integer
+      stock_minimo:
+        type: integer
+    required:
+    - codigo
+    - nombre
+    - precio
+    type: object
+  model.Device:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      platform:
+        $ref: '#/definitions/model.Platform'
+      token:
+        type: string
+      user_id:
+        type: string
+    type: object
+  model.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  model.Movimiento:
+    properties:
+      cantidad:
+        type: integer
+      fecha:
+        type: string
+      id:
+        type: string
+      motivo:
+        type: string
+      producto_id:
+        type: string
+      producto_nombre:
+        type: string
+      tipo:
+        $ref: '#/definitions/model.TipoMovimiento'
+      usuario_id:
+        type: string
+    type: object
+  model.Platform:
+    enum:
+    - android
+    - ios
+    - web
+    type: string
+    x-enum-varnames:
+    - PlatformAndroid
+    - PlatformIOS
+    - PlatformWeb
+  model.Producto:
+    properties:
+      categoria_id:
+        type: string
+      categoria_nombre:
+        type: string
+      codigo:
+        type: string
+      codigo_barras:
+        type: string
+      created_at:
+        type: string
+      descripcion:
+        type: string
+      id:
+        type: string
+      imagen:
+        type: string
+      nombre:
+        type: string
+      precio:
+        type: number
+      stock_actual:
+        type: integer
+      stock_minimo:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  model.RegisterDeviceRequest:
+    properties:
+      platform:
+        allOf:
+        - $ref: '#/definitions/model.Platform'
+        enum:
+        - android
+        - ios
+        - web
+      token:
+        type: string
+    required:
+    - platform
+    - token
+    type: object
+  model.RegisterRequest:
+    properties:
+      email:
+        type: string
+      nombre:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  model.TipoMovimiento:
+    enum:
+    - entrada
+    - salida
+    type: string
+    x-enum-varnames:
+    - Entrada
+    - Salida
+  model.UpdateCategoriaRequest:
+    properties:
+      descripcion:
+        type: string
+      nombre:
+        type: string
+    type: object
+  model.UpdateProductoRequest:
+    properties:
+      categoria_id:
+        type: string
+      codigo:
+        type: string
+      codigo_barras:
+        type: string
+      descripcion:
+        type: string
+      nombre:
+        type: string
+      precio:
+        type: number
+      stock_minimo:
+        type: integer
+    type: object
+  model.UserRole:
+    enum:
+    - admin
+    - usuario
+    type: string
+    x-enum-varnames:
+    - RoleAdmin
+    - RoleUsuario
+  model.Usuario:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      nombre:
+        type: string
+      rol:
+        $ref: '#/definitions/model.UserRole'
+      updated_at:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@stockapp.com
+    name: API Support
+    url: http://www.stockapp.com/support
+  description: API para gestión de inventario y stock
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: StockApp API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and get JWT token
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Login
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Register request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Register
+      tags:
+      - Auth
+  /categorias:
+    get:
+      description: Get all categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get All Categorias
+      tags:
+      - Categorias
+    post:
+      consumes:
+      - application/json
+      description: Create a new category
+      parameters:
+      - description: Categoria
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateCategoriaRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Categoria'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Categoria
+      tags:
+      - Categorias
+  /categorias/{id}:
+    delete:
+      description: Delete a category
+      parameters:
+      - description: Categoria ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete Categoria
+      tags:
+      - Categorias
+    get:
+      description: Get a category by ID
+      parameters:
+      - description: Categoria ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Categoria'
+      security:
+      - BearerAuth: []
+      summary: Get Categoria by ID
+      tags:
+      - Categorias
+    put:
+      consumes:
+      - application/json
+      description: Update a category
+      parameters:
+      - description: Categoria ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Categoria
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateCategoriaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Categoria'
+      security:
+      - BearerAuth: []
+      summary: Update Categoria
+      tags:
+      - Categorias
+  /dashboard:
+    get:
+      description: Get dashboard statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: Get Dashboard
+      tags:
+      - Dashboard
+  /devices:
+    get:
+      description: Get all devices for current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Device'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get User Devices
+      tags:
+      - Devices
+    post:
+      consumes:
+      - application/json
+      description: Register a device for push notifications
+      parameters:
+      - description: Device info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterDeviceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Device'
+      security:
+      - BearerAuth: []
+      summary: Register Device
+      tags:
+      - Devices
+  /devices/{id}:
+    delete:
+      description: Delete a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete Device
+      tags:
+      - Devices
+  /movimientos:
+    get:
+      description: Get all stock movements with filters
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by product
+        in: query
+        name: producto_id
+        type: string
+      - description: Filter by type (entrada/salida)
+        in: query
+        name: tipo
+        type: string
+      - description: Filter from date
+        in: query
+        name: fecha_desde
+        type: string
+      - description: Filter to date
+        in: query
+        name: fecha_hasta
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get All Movimientos
+      tags:
+      - Movimientos
+    post:
+      consumes:
+      - application/json
+      description: Create a stock movement (entrada/salida)
+      parameters:
+      - description: Movimiento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateMovimientoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Movimiento'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Movimiento
+      tags:
+      - Movimientos
+  /movimientos/producto/{producto_id}:
+    get:
+      description: Get all movements for a specific product
+      parameters:
+      - description: Producto ID
+        in: path
+        name: producto_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Movimiento'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get Movimientos by Producto
+      tags:
+      - Movimientos
+  /productos:
+    get:
+      description: Get all products with pagination and filters
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by name or code
+        in: query
+        name: search
+        type: string
+      - description: Filter by category
+        in: query
+        name: categoria_id
+        type: string
+      - description: Filter by low stock
+        in: query
+        name: stock_bajo
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get All Productos
+      tags:
+      - Productos
+    post:
+      consumes:
+      - application/json
+      description: Create a new product
+      parameters:
+      - description: Producto
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateProductoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Producto'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Producto
+      tags:
+      - Productos
+  /productos/{id}:
+    delete:
+      description: Delete a product
+      parameters:
+      - description: Producto ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete Producto
+      tags:
+      - Productos
+    get:
+      description: Get a product by ID
+      parameters:
+      - description: Producto ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Producto'
+      security:
+      - BearerAuth: []
+      summary: Get Producto by ID
+      tags:
+      - Productos
+    put:
+      consumes:
+      - application/json
+      description: Update a product
+      parameters:
+      - description: Producto ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Producto
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateProductoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Producto'
+      security:
+      - BearerAuth: []
+      summary: Update Producto
+      tags:
+      - Productos
+  /productos/{id}/imagen:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an image for a product
+      parameters:
+      - description: Producto ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Product image
+        in: formData
+        name: imagen
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Upload Product Image
+      tags:
+      - Productos
+  /productos/barcode/{codigo}:
+    get:
+      description: Get a product by barcode code
+      parameters:
+      - description: Barcode code
+        in: path
+        name: codigo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Producto'
+      security:
+      - BearerAuth: []
+      summary: Get Producto by Barcode
+      tags:
+      - Productos
+  /productos/stock-bajo:
+    get:
+      description: Get all products with stock below minimum
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Low Stock Products
+      tags:
+      - Productos
+  /reportes/dashboard-avanzado:
+    get:
+      description: Get advanced dashboard with detailed stats
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: Get Advanced Dashboard
+      tags:
+      - Reportes
+  /reportes/movimientos-fecha:
+    get:
+      description: Get movements in a date range
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: desde
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: hasta
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: Get Movimientos by Date Range
+      tags:
+      - Reportes
+  /reportes/stock-categoria:
+    get:
+      description: Get stock grouped by category
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: Get Stock by Category
+      tags:
+      - Reportes
+schemes:
+- http
+- https
+swagger: "2.0"

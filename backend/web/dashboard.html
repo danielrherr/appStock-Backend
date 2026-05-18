@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockApp Admin - Dashboard</title>
+    <link rel="stylesheet" href="/web/css/styles.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">StockApp Admin</div>
+            <ul class="sidebar-nav">
+                <li><a href="/web/dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="/web/productos.html">Productos</a></li>
+                <li><a href="/web/categorias.html">Categorías</a></li>
+                <li><a href="/web/movimientos.html">Movimientos</a></li>
+                <li><a href="#" id="logoutBtn" class="logout">Cerrar Sesión</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">Dashboard</h1>
+                <div id="userInfo"></div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="label">Total Productos</div>
+                    <div class="value" id="totalProductos">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Total Categorías</div>
+                    <div class="value" id="totalCategorias">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Stock Bajo</div>
+                    <div class="value warning" id="stockBajo">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Movimientos Hoy</div>
+                    <div class="value" id="movimientosHoy">-</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="data-table-container">
+                <div style="padding: 20px;">
+                    <h3 style="margin-bottom: 16px;">Acciones Rápidas</h3>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <a href="/web/productos.html?action=new" class="btn-primary" style="display: inline-block; width: auto; text-decoration: none;">+ Nuevo Producto</a>
+                        <a href="/web/categorias.html?action=new" class="btn-secondary" style="display: inline-block; width: auto; text-decoration: none;">+ Nueva Categoría</a>
+                        <a href="/web/movimientos.html?action=new" class="btn-secondary" style="display: inline-block; width: auto; text-decoration: none;">+ Nuevo Movimiento</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Movements -->
+            <div class="data-table-container" style="margin-top: 20px;">
+                <div style="padding: 20px;">
+                    <h3 style="margin-bottom: 16px;">Movimientos Recientes</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Tipo</th>
+                                <th>Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentMovements">
+                            <tr><td colspan="4" class="loading">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/web/js/app.js"></script>
+    <script>
+        // Check auth
+        if (!requireAuth()) {}
+
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                const [dashData, productos, categorias, movimientos] = await Promise.all([
+                    apiCall('/dashboard'),
+                    (await apiCall('/productos'))?.data ?? [],
+                    (await apiCall('/categorias'))?.data ?? [],
+                    (await apiCall('/movimientos'))?.data ?? []
+                ]);
+
+                // Update stats
+                document.getElementById('totalProductos').textContent = dashData.total_productos || 0;
+                document.getElementById('totalCategorias').textContent = dashData.total_categorias || 0;
+                document.getElementById('stockBajo').textContent = dashData.stock_bajo || 0;
+                document.getElementById('movimientosHoy').textContent = dashData.movimientos_hoy || 0;
+
+                // Show user info
+                const user = getUser();
+                document.getElementById('userInfo').textContent = `Hola, ${user?.nombre || 'Admin'}`;
+
+                // Recent movements
+                const tbody = document.getElementById('recentMovements');
+                if (movimientos && movimientos.length > 0) {
+                    const recent = movimientos.slice(0, 5);
+                    tbody.innerHTML = recent.map(m => `
+                        <tr>
+                            <td>${formatDate(m.fecha)}</td>
+                            <td>${m.producto_nombre || 'N/A'}</td>
+                            <td><span class="badge ${m.tipo === 'entrada' ? 'badge-success' : 'badge-warning'}">${m.tipo}</span></td>
+                            <td>${m.cantidad}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Sin movimientos recientes</td></tr>';
+                }
+            } catch (err) {
+                console.error('Error loading dashboard:', err);
+                showToast('Error al cargar dashboard', 'error');
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

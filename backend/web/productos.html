@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockApp Admin - Productos</title>
+    <link rel="stylesheet" href="/web/css/styles.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">StockApp Admin</div>
+            <ul class="sidebar-nav">
+                <li><a href="/web/dashboard.html">Dashboard</a></li>
+                <li><a href="/web/productos.html" class="active">Productos</a></li>
+                <li><a href="/web/categorias.html">Categorías</a></li>
+                <li><a href="/web/movimientos.html">Movimientos</a></li>
+                <li><a href="#" id="logoutBtn" class="logout">Cerrar Sesión</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">Productos</h1>
+                <button class="btn-primary" onclick="openModal()" style="width: auto;">+ Nuevo Producto</button>
+            </div>
+
+            <div class="toolbar">
+                <input type="text" class="search-input" id="searchInput" placeholder="Buscar productos...">
+                <select class="search-input" id="categoriaFilter" style="max-width: 200px;">
+                    <option value="">Todas las categorías</option>
+                </select>
+                <button class="btn-secondary" onclick="loadProductos()">Buscar</button>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Categoría</th>
+                            <th>Stock</th>
+                            <th>Precio</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productosTable">
+                        <tr><td colspan="7" class="loading">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Producto -->
+    <div class="modal-overlay" id="productoModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nuevo Producto</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="productoForm">
+                <input type="hidden" id="productoId">
+                <div class="form-group">
+                    <label for="codigo">Código *</label>
+                    <input type="text" id="codigo" required>
+                </div>
+                <div class="form-group">
+                    <label for="nombre">Nombre *</label>
+                    <input type="text" id="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="descripcion">Descripción</label>
+                    <textarea id="descripcion" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="categoria_id">Categoría *</label>
+                    <select id="categoria_id" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="codigo_barras">Código de Barras</label>
+                    <input type="text" id="codigo_barras">
+                </div>
+                <div class="form-group">
+                    <label for="stock_actual">Stock *</label>
+                    <input type="number" id="stock_actual" required min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="stock_minimo">Stock Mínimo</label>
+                    <input type="number" id="stock_minimo" min="0" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="precio">Precio</label>
+                    <input type="number" id="precio" step="0.01" min="0">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/web/js/app.js"></script>
+    <script>
+        let currentEditingId = null;
+
+        // Check auth
+        if (!requireAuth()) {}
+
+        // Load on init
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadCategoriasForSelect();
+            await loadProductos();
+
+            // Check for new action
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('action') === 'new') {
+                openModal();
+            }
+        });
+
+        async function loadCategoriasForSelect() {
+            try {
+                const categorias = (await apiCall('/categorias'))?.data ?? [];
+                const select = document.getElementById('categoria_id');
+                const filter = document.getElementById('categoriaFilter');
+
+                categorias.forEach(c => {
+                    select.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+                    filter.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+                });
+            } catch (err) {
+                console.error('Error loading categorias:', err);
+            }
+        }
+
+        async function loadProductos() {
+            try {
+                const productos = (await apiCall('/productos'))?.data ?? [];
+                const tbody = document.getElementById('productosTable');
+
+                if (productos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No hay productos</td></tr>';
+                    return;
+                }
+
+                // Filter by search
+                const search = document.getElementById('searchInput').value.toLowerCase();
+                const catFilter = document.getElementById('categoriaFilter').value;
+
+                let filtered = productos;
+                if (search) {
+                    filtered = filtered.filter(p =>
+                        (p.codigo && p.codigo.toLowerCase().includes(search)) ||
+                        p.nombre.toLowerCase().includes(search) ||
+                        ((p.codigo_barras || p.codigo_barra) && (p.codigo_barras || p.codigo_barra).toLowerCase().includes(search))
+                    );
+                }
+                if (catFilter) {
+                    filtered = filtered.filter(p => p.categoria_id == catFilter);
+                }
+
+                tbody.innerHTML = filtered.map(p => {
+                    const stock = p.stock_actual ?? p.stock ?? 0;
+                    return `
+                    <tr>
+                        <td>${p.codigo || p.id.substring(0, 8)}</td>
+                        <td>${p.nombre}</td>
+                        <td>${p.categoria_nombre || '-'}</td>
+                        <td>
+                            <span class="badge ${stock <= p.stock_minimo ? 'badge-warning' : 'badge-success'}">
+                                ${stock}
+                            </span>
+                        </td>
+                        <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
+                        <td>${p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'}</td>
+                        <td class="actions">
+                            <button class="edit-btn" onclick="editProducto('${p.id}')">Editar</button>
+                            <button class="delete-btn" onclick="deleteProducto('${p.id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+                }).join('');
+            } catch (err) {
+                console.error('Error loading productos:', err);
+                showToast('Error al cargar productos', 'error');
+            }
+        }
+
+        function openModal(producto = null) {
+            const modal = document.getElementById('productoModal');
+            const form = document.getElementById('productoForm');
+            const title = document.getElementById('modalTitle');
+
+            if (producto) {
+                title.textContent = 'Editar Producto';
+                currentEditingId = producto.id;
+                document.getElementById('codigo').value = producto.codigo || '';
+                document.getElementById('nombre').value = producto.nombre;
+                document.getElementById('descripcion').value = producto.descripcion || '';
+                document.getElementById('categoria_id').value = producto.categoria_id;
+                document.getElementById('codigo_barras').value = producto.codigo_barras || producto.codigo_barra || '';
+                document.getElementById('stock_actual').value = producto.stock_actual ?? producto.stock ?? 0;
+                document.getElementById('stock_minimo').value = producto.stock_minimo || 5;
+                document.getElementById('precio').value = producto.precio || '';
+            } else {
+                title.textContent = 'Nuevo Producto';
+                currentEditingId = null;
+                form.reset();
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('productoModal').classList.remove('active');
+        }
+
+        async function editProducto(id) {
+            try {
+                const response = await apiCall(`/productos/${id}`);
+                openModal(response.data);
+            } catch (err) {
+                showToast('Error al cargar producto', 'error');
+            }
+        }
+
+        async function deleteProducto(id) {
+            if (!confirm('¿Estás seguro de eliminar este producto?')) return;
+
+            try {
+                await apiCall(`/productos/${id}`, { method: 'DELETE' });
+                showToast('Producto eliminado');
+                loadProductos();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        document.getElementById('productoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                codigo: document.getElementById('codigo').value,
+                nombre: document.getElementById('nombre').value,
+                descripcion: document.getElementById('descripcion').value,
+                categoria_id: document.getElementById('categoria_id').value,
+                codigo_barras: document.getElementById('codigo_barras').value,
+                stock_actual: parseInt(document.getElementById('stock_actual').value),
+                stock_minimo: parseInt(document.getElementById('stock_minimo').value),
+                precio: parseFloat(document.getElementById('precio').value) || 0
+            };
+
+            try {
+                if (currentEditingId) {
+                    await apiCall(`/productos/${currentEditingId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(data)
+                    });
+                    showToast('Producto actualizado');
+                } else {
+                    await apiCall('/productos', {
+                        method: 'POST',
+                        body: JSON.stringify(data)
+                    });
+                    showToast('Producto creado');
+                }
+                closeModal();
+                loadProductos();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
