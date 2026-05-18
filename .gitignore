@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+build/
+*.apk
+*.exe
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter
+.dart_tool/
+.packages
+.pub/
+flutter_*.png
+
+# Go
+*.exe~
+*.test
+coverage.txt
+
+# Local config
+.env
+*.local
+
+# Misc
+*.log
+tmp/
+backend/stockapp.db
+
+# AI tools (not needed in repo)
+.gga
+AGENTS.md
