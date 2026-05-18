@@ -1310,7 +1310,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
 	BasePath:         "/api/v1",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{},
 	Title:            "StockApp API",
 	Description:      "API para gestión de inventario y stock",
 	InfoInstanceName: "swagger",

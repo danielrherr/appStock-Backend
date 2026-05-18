@@ -826,7 +826,4 @@ paths:
       summary: Get Stock by Category
       tags:
       - Reportes
-schemes:
-- http
-- https
 swagger: "2.0"
