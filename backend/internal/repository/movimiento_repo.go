@@ -5,17 +5,16 @@ import (
 	"time"
 
 	"github.com/stockapp/backend/internal/model"
-	"github.com/stockapp/backend/internal/utils"
 )
 
 func CreateMovimiento(productoID string, req *model.CreateMovimientoRequest, usuarioID *string) (*model.Movimiento, error) {
-	id := utils.NewUUID()
-	
-	_, err := DB.Exec(
-		`INSERT INTO movimientos (id, producto_id, tipo, cantidad, motivo, usuario_id) 
-		 VALUES (?, ?, ?, ?, ?, ?)`,
-		id, productoID, req.Tipo, req.Cantidad, req.Motivo, usuarioID,
-	)
+	// PostgreSQL generates UUID automatically via gen_random_uuid()
+	var id string
+	err := DB.QueryRow(
+		`INSERT INTO movimientos (producto_id, tipo, cantidad, motivo, usuario_id) 
+		 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+		productoID, req.Tipo, req.Cantidad, req.Motivo, usuarioID,
+	).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +34,7 @@ func GetMovimientoByID(id string) (*model.Movimiento, error) {
 		`SELECT m.id, m.producto_id, p.nombre, m.tipo, m.cantidad, m.motivo, m.usuario_id, m.fecha 
 		 FROM movimientos m 
 		 JOIN productos p ON m.producto_id = p.id 
-		 WHERE m.id = ?`, id,
+		 WHERE m.id = $1`, id,
 	).Scan(&m.ID, &m.ProductoID, &m.ProductoNombre, &m.Tipo, &m.Cantidad, &m.Motivo, &m.UsuarioID, &m.Fecha)
 	
 	if err != nil {
@@ -49,28 +48,33 @@ func GetMovimientos(filter model.MovimientoFilter) ([]model.Movimiento, int, err
 	
 	baseQuery := `FROM movimientos m JOIN productos p ON m.producto_id = p.id WHERE 1=1`
 	var args []interface{}
+	argNum := 1
 	
 	if filter.ProductoID != "" {
-		baseQuery += ` AND m.producto_id = ?`
+		baseQuery += fmt.Sprintf(` AND m.producto_id = $%d`, argNum)
 		args = append(args, filter.ProductoID)
+		argNum++
 	}
 	
 	if filter.Tipo != "" {
-		baseQuery += ` AND m.tipo = ?`
+		baseQuery += fmt.Sprintf(` AND m.tipo = $%d`, argNum)
 		args = append(args, filter.Tipo)
+		argNum++
 	}
 	
 	if filter.FechaDesde != "" {
-		baseQuery += ` AND m.fecha >= ?`
+		baseQuery += fmt.Sprintf(` AND m.fecha >= $%d`, argNum)
 		if t, err := time.Parse("2006-01-02", filter.FechaDesde); err == nil {
 			args = append(args, t)
+			argNum++
 		}
 	}
 	
 	if filter.FechaHasta != "" {
-		baseQuery += ` AND m.fecha <= ?`
+		baseQuery += fmt.Sprintf(` AND m.fecha <= $%d`, argNum)
 		if t, err := time.Parse("2006-01-02", filter.FechaHasta); err == nil {
 			args = append(args, t.Add(24*time.Hour))
+			argNum++
 		}
 	}
 
@@ -83,7 +87,7 @@ func GetMovimientos(filter model.MovimientoFilter) ([]model.Movimiento, int, err
 	}
 
 	// Get data
-	query := fmt.Sprintf(`SELECT m.id, m.producto_id, p.nombre, m.tipo, m.cantidad, m.motivo, m.usuario_id, m.fecha %s ORDER BY m.fecha DESC LIMIT ? OFFSET ?`, baseQuery)
+	query := fmt.Sprintf(`SELECT m.id, m.producto_id, p.nombre, m.tipo, m.cantidad, m.motivo, m.usuario_id, m.fecha %s ORDER BY m.fecha DESC LIMIT $%d OFFSET $%d`, baseQuery, argNum, argNum+1)
 	args = append(args, filter.Limit, offset)
 	
 	rows, err := DB.Query(query, args...)
@@ -108,7 +112,7 @@ func GetMovimientosByProducto(productoID string) ([]model.Movimiento, error) {
 		`SELECT m.id, m.producto_id, p.nombre, m.tipo, m.cantidad, m.motivo, m.usuario_id, m.fecha 
 		 FROM movimientos m 
 		 JOIN productos p ON m.producto_id = p.id 
-		 WHERE m.producto_id = ? 
+		 WHERE m.producto_id = $1 
 		 ORDER BY m.fecha DESC`,
 		productoID,
 	)
@@ -131,7 +135,7 @@ func GetMovimientosByProducto(productoID string) ([]model.Movimiento, error) {
 func GetMovimientosHoy() (int, error) {
 	var count int
 	err := DB.QueryRow(
-		`SELECT COUNT(*) FROM movimientos WHERE date(fecha) = date('now')`,
+		`SELECT COUNT(*) FROM movimientos WHERE date(fecha) = CURRENT_DATE`,
 	).Scan(&count)
 	return count, err
 }

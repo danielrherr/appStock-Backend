@@ -2,16 +2,15 @@ package repository
 
 import (
 	"github.com/stockapp/backend/internal/model"
-	"github.com/stockapp/backend/internal/utils"
 )
 
 func CreateDevice(userID *string, token string, platform model.Platform) (*model.Device, error) {
-	id := utils.NewUUID()
-	
-	_, err := DB.Exec(
-		`INSERT INTO devices (id, user_id, token, platform) VALUES (?, ?, ?, ?)`,
-		id, userID, token, string(platform),
-	)
+	// PostgreSQL generates UUID automatically via gen_random_uuid()
+	var id string
+	err := DB.QueryRow(
+		`INSERT INTO devices (user_id, token, platform) VALUES ($1, $2, $3) RETURNING id`,
+		userID, token, string(platform),
+	).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +21,7 @@ func CreateDevice(userID *string, token string, platform model.Platform) (*model
 func GetDeviceByID(id string) (*model.Device, error) {
 	var d model.Device
 	err := DB.QueryRow(
-		`SELECT id, user_id, token, platform, created_at FROM devices WHERE id = ?`, id,
+		`SELECT id, user_id, token, platform, created_at FROM devices WHERE id = $1`, id,
 	).Scan(&d.ID, &d.UserID, &d.Token, &d.Platform, &d.CreatedAt)
 	
 	if err != nil {
@@ -33,7 +32,7 @@ func GetDeviceByID(id string) (*model.Device, error) {
 
 func GetDevicesByUser(userID string) ([]model.Device, error) {
 	rows, err := DB.Query(
-		`SELECT id, user_id, token, platform, created_at FROM devices WHERE user_id = ?`,
+		`SELECT id, user_id, token, platform, created_at FROM devices WHERE user_id = $1`,
 		userID,
 	)
 	if err != nil {
@@ -74,7 +73,7 @@ func GetAllDevices() ([]model.Device, error) {
 
 func UpdateDeviceToken(id, token string) (*model.Device, error) {
 	_, err := DB.Exec(
-		`UPDATE devices SET token = ? WHERE id = ?`,
+		`UPDATE devices SET token = $1 WHERE id = $2`,
 		token, id,
 	)
 	if err != nil {
@@ -84,12 +83,12 @@ func UpdateDeviceToken(id, token string) (*model.Device, error) {
 }
 
 func DeleteDevice(id string) error {
-	_, err := DB.Exec(`DELETE FROM devices WHERE id = ?`, id)
+	_, err := DB.Exec(`DELETE FROM devices WHERE id = $1`, id)
 	return err
 }
 
 func DeviceTokenExists(token string) (bool, error) {
 	var count int
-	err := DB.QueryRow(`SELECT COUNT(*) FROM devices WHERE token = ?`, token).Scan(&count)
+	err := DB.QueryRow(`SELECT COUNT(*) FROM devices WHERE token = $1`, token).Scan(&count)
 	return count > 0, err
 }

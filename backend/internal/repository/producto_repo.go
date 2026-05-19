@@ -5,17 +5,18 @@ import (
 	"strings"
 
 	"github.com/stockapp/backend/internal/model"
-	"github.com/stockapp/backend/internal/utils"
 )
 
 func CreateProducto(req *model.CreateProductoRequest) (*model.Producto, error) {
-	id := utils.NewUUID()
-	
-	_, err := DB.Exec(
-		`INSERT INTO productos (id, codigo, codigo_barras, nombre, descripcion, categoria_id, precio, stock_actual, stock_minimo) 
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, req.Codigo, req.CodigoBarras, req.Nombre, req.Descripcion, req.CategoriaID, req.Precio, req.StockActual, req.StockMinimo,
-	)
+	// PostgreSQL generates UUID automatically via gen_random_uuid()
+	// We just need to pass NULL or omit the id column
+	var id string
+	err := DB.QueryRow(
+		`INSERT INTO productos (codigo, codigo_barras, nombre, descripcion, categoria_id, precio, stock_actual, stock_minimo) 
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		 RETURNING id`,
+		req.Codigo, req.CodigoBarras, req.Nombre, req.Descripcion, req.CategoriaID, req.Precio, req.StockActual, req.StockMinimo,
+	).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +30,7 @@ func GetProductoByID(id string) (*model.Producto, error) {
 		`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, c.nombre, p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at 
 		 FROM productos p 
 		 LEFT JOIN categorias c ON p.categoria_id = c.id 
-		 WHERE p.id = ?`, id,
+		 WHERE p.id = $1`, id,
 	).Scan(&p.ID, &p.Codigo, &p.CodigoBarras, &p.Nombre, &p.Descripcion, &p.CategoriaID, &p.CategoriaNombre, &p.Precio, &p.StockActual, &p.StockMinimo, &p.Imagen, &p.CreatedAt, &p.UpdatedAt)
 	
 	if err != nil {
@@ -44,7 +45,7 @@ func GetProductoByCodigo(codigo string) (*model.Producto, error) {
 		`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, c.nombre, p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at 
 		 FROM productos p 
 		 LEFT JOIN categorias c ON p.categoria_id = c.id 
-		 WHERE p.codigo = ? OR p.codigo_barras = ?`, codigo, codigo,
+		 WHERE p.codigo = $1 OR p.codigo_barras = $1`, codigo,
 	).Scan(&p.ID, &p.Codigo, &p.CodigoBarras, &p.Nombre, &p.Descripcion, &p.CategoriaID, &p.CategoriaNombre, &p.Precio, &p.StockActual, &p.StockMinimo, &p.Imagen, &p.CreatedAt, &p.UpdatedAt)
 	
 	if err != nil {
@@ -56,19 +57,22 @@ func GetProductoByCodigo(codigo string) (*model.Producto, error) {
 func GetProductos(page, limit int, search, categoriaID string, stockBajo bool) ([]model.Producto, int, error) {
 	offset := (page - 1) * limit
 	
-	// Build query
+	// Build query with dynamic placeholders
 	baseQuery := `FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE 1=1`
 	var args []interface{}
+	argNum := 1
 	
 	if search != "" {
-		baseQuery += ` AND (p.nombre LIKE ? OR p.codigo LIKE ? OR p.codigo_barras LIKE ?)`
+		baseQuery += fmt.Sprintf(` AND (p.nombre LIKE $%d OR p.codigo LIKE $%d OR p.codigo_barras LIKE $%d)`, argNum, argNum+1, argNum+2)
 		searchTerm := "%" + search + "%"
 		args = append(args, searchTerm, searchTerm, searchTerm)
+		argNum += 3
 	}
 	
 	if categoriaID != "" {
-		baseQuery += ` AND p.categoria_id = ?`
+		baseQuery += fmt.Sprintf(` AND p.categoria_id = $%d`, argNum)
 		args = append(args, categoriaID)
+		argNum++
 	}
 	
 	if stockBajo {
@@ -83,8 +87,8 @@ func GetProductos(page, limit int, search, categoriaID string, stockBajo bool) (
 		return nil, 0, err
 	}
 
-	// Get data
-	query := fmt.Sprintf(`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, c.nombre, p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at %s LIMIT ? OFFSET ?`, baseQuery)
+	// Get data - append LIMIT/OFFSET at the end
+	query := fmt.Sprintf(`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, c.nombre, p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at %s LIMIT $%d OFFSET $%d`, baseQuery, argNum, argNum+1)
 	args = append(args, limit, offset)
 	
 	rows, err := DB.Query(query, args...)
@@ -132,44 +136,52 @@ func UpdateProducto(id string, req *model.UpdateProductoRequest) (*model.Product
 	// Build dynamic update
 	var sets []string
 	var args []interface{}
+	argNum := 1
 	
 	if req.Codigo != nil {
-		sets = append(sets, "codigo = ?")
+		sets = append(sets, fmt.Sprintf("codigo = $%d", argNum))
 		args = append(args, *req.Codigo)
+		argNum++
 	}
 	if req.CodigoBarras != nil {
-		sets = append(sets, "codigo_barras = ?")
+		sets = append(sets, fmt.Sprintf("codigo_barras = $%d", argNum))
 		args = append(args, *req.CodigoBarras)
+		argNum++
 	}
 	if req.Nombre != nil {
-		sets = append(sets, "nombre = ?")
+		sets = append(sets, fmt.Sprintf("nombre = $%d", argNum))
 		args = append(args, *req.Nombre)
+		argNum++
 	}
 	if req.Descripcion != nil {
-		sets = append(sets, "descripcion = ?")
+		sets = append(sets, fmt.Sprintf("descripcion = $%d", argNum))
 		args = append(args, *req.Descripcion)
+		argNum++
 	}
 	if req.CategoriaID != nil {
-		sets = append(sets, "categoria_id = ?")
+		sets = append(sets, fmt.Sprintf("categoria_id = $%d", argNum))
 		args = append(args, *req.CategoriaID)
+		argNum++
 	}
 	if req.Precio != nil {
-		sets = append(sets, "precio = ?")
+		sets = append(sets, fmt.Sprintf("precio = $%d", argNum))
 		args = append(args, *req.Precio)
+		argNum++
 	}
 	if req.StockMinimo != nil {
-		sets = append(sets, "stock_minimo = ?")
+		sets = append(sets, fmt.Sprintf("stock_minimo = $%d", argNum))
 		args = append(args, *req.StockMinimo)
+		argNum++
 	}
 	
 	if len(sets) == 0 {
 		return GetProductoByID(id)
 	}
 	
-	sets = append(sets, "updated_at = CURRENT_TIMESTAMP")
+	sets = append(sets, "updated_at = NOW()")
 	args = append(args, id)
 	
-	query := "UPDATE productos SET " + strings.Join(sets, ", ") + " WHERE id = ?"
+	query := fmt.Sprintf("UPDATE productos SET %s WHERE id = $%d", strings.Join(sets, ", "), argNum)
 	_, err := DB.Exec(query, args...)
 	if err != nil {
 		return nil, err
@@ -185,7 +197,7 @@ func UpdateStock(productoID string, cantidad int, esEntrada bool) error {
 	}
 	
 	_, err := DB.Exec(
-		fmt.Sprintf(`UPDATE productos SET stock_actual = stock_actual %s ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, operador),
+		fmt.Sprintf(`UPDATE productos SET stock_actual = stock_actual %s $1, updated_at = NOW() WHERE id = $2`, operador),
 		cantidad, productoID,
 	)
 	return err
@@ -193,7 +205,7 @@ func UpdateStock(productoID string, cantidad int, esEntrada bool) error {
 
 func UpdateImagen(productoID, imagen string) (*model.Producto, error) {
 	_, err := DB.Exec(
-		`UPDATE productos SET imagen = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		`UPDATE productos SET imagen = $1, updated_at = NOW() WHERE id = $2`,
 		imagen, productoID,
 	)
 	if err != nil {
@@ -203,12 +215,12 @@ func UpdateImagen(productoID, imagen string) (*model.Producto, error) {
 }
 
 func DeleteProducto(id string) error {
-	_, err := DB.Exec(`DELETE FROM productos WHERE id = ?`, id)
+	_, err := DB.Exec(`DELETE FROM productos WHERE id = $1`, id)
 	return err
 }
 
 func CodigoExists(codigo string) (bool, error) {
 	var count int
-	err := DB.QueryRow(`SELECT COUNT(*) FROM productos WHERE codigo = ?`, codigo).Scan(&count)
+	err := DB.QueryRow(`SELECT COUNT(*) FROM productos WHERE codigo = $1`, codigo).Scan(&count)
 	return count > 0, err
 }
