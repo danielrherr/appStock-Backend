@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stockapp/backend/internal/model"
+	"github.com/stockapp/backend/internal/repository"
 	"github.com/stockapp/backend/internal/service"
 )
 
@@ -52,6 +53,16 @@ func (h *CategoriaHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Router /categorias [get]
+// CategoriaWithCount representa categoría con conteo de productos
+type CategoriaWithCount struct {
+	ID            string  `json:"id"`
+	Nombre        string  `json:"nombre"`
+	Descripcion   *string `json:"descripcion"`
+	CreatedAt     string  `json:"created_at"`
+	UpdatedAt     string  `json:"updated_at"`
+	ProductosCount int    `json:"productos_count"`
+}
+
 func (h *CategoriaHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	categorias, err := h.categoriaService.GetAll()
 	if err != nil {
@@ -59,8 +70,22 @@ func (h *CategoriaHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Agregar conteo de productos por categoría
+	result := make([]CategoriaWithCount, len(categorias))
+	for i, c := range categorias {
+		count, _ := repository.GetProductoCountByCategoria(c.ID)
+		result[i] = CategoriaWithCount{
+			ID:             c.ID,
+			Nombre:         c.Nombre,
+			Descripcion:    c.Descripcion,
+			CreatedAt:      c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:      c.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			ProductosCount: count,
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"data": categorias})
+	json.NewEncoder(w).Encode(map[string]interface{}{"data": result})
 }
 
 // @Summary Get Categoria by ID

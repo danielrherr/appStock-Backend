@@ -224,7 +224,8 @@
         async function editProducto(id) {
             try {
                 const response = await apiCall(`/productos/${id}`);
-                openModal(response.data);
+                // El endpoint devuelve el producto directo, no con wrapper data
+                openModal(response);
             } catch (err) {
                 showToast('Error al cargar producto', 'error');
             }

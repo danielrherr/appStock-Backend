@@ -57,6 +57,7 @@ func (s *MovimientoService) GetByProducto(productoID string) ([]model.Movimiento
 
 type DashboardStats struct {
 	TotalProductos      int     `json:"total_productos"`
+	TotalCategorias     int     `json:"total_categorias"`
 	ProductosStockBajo  int     `json:"productos_stock_bajo"`
 	MovimientosHoy      int     `json:"movimientos_hoy"`
 	ValorTotalStock     float64 `json:"valor_total_stock"`
@@ -91,9 +92,16 @@ func (s *MovimientoService) GetDashboard() (*DashboardStats, error) {
 		valorTotal += p.Precio * float64(p.StockActual)
 	}
 
+	// Total categorías
+	categorias, err := repository.GetAllCategorias()
+	if err != nil {
+		categorias = []model.Categoria{}
+	}
+
 	return &DashboardStats{
-		TotalProductos:     totalProductos,
-		ProductosStockBajo: len(stockBajo),
+		TotalProductos:      totalProductos,
+		TotalCategorias:     len(categorias),
+		ProductosStockBajo:  len(stockBajo),
 		MovimientosHoy:     movimientosHoy,
 		ValorTotalStock:    valorTotal,
 	}, nil
