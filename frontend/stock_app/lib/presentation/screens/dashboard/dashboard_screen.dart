@@ -8,6 +8,7 @@ import '../productos/producto_list_screen.dart';
 import '../movimientos/movimiento_list_screen.dart';
 import '../scanner/barcode_scanner_screen.dart';
 import '../productos/producto_detail_screen.dart';
+import '../compras/lista_compras_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -46,20 +47,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.more_vert),
             itemBuilder: (context) => [
               const PopupMenuItem(
+                value: 'shopping',
+                child: Row(
+                  children: [
+                    Icon(Icons.shopping_cart, size: 20),
+                    SizedBox(width: 8),
+                    Text('Lista de Compras'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
                 value: 'settings',
-                child: Text('Configuración'),
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, size: 20),
+                    SizedBox(width: 8),
+                    Text('Configuración'),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'logout',
-                child: const Text('Cerrar sesión'),
-                onTap: () {
-                  context.read<AuthProvider>().logout();
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                },
+                child: const Row(
+                  children: [
+                    Icon(Icons.logout, size: 20),
+                    SizedBox(width: 8),
+                    Text('Cerrar sesión'),
+                  ],
+                ),
               ),
             ],
+            onSelected: (value) {
+              if (value == 'shopping') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ListaComprasScreen()),
+                );
+              } else if (value == 'logout') {
+                context.read<AuthProvider>().logout();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              }
+            },
           ),
         ],
       ),
