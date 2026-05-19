@@ -251,11 +251,10 @@ class _ProductoFormScreenState extends State<ProductoFormScreen> {
                     child: TextFormField(
                       controller: _stockController,
                       decoration: const InputDecoration(
-                        labelText: 'Stock inicial',
+                        labelText: 'Stock',
                         prefixIcon: Icon(Icons.inventory),
                       ),
                       keyboardType: TextInputType.number,
-                      enabled: !_isEditing,
                     ),
                   ),
                   const SizedBox(width: 16),

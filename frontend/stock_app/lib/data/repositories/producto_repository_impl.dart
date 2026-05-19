@@ -67,6 +67,7 @@ class ProductoRepositoryImpl implements ProductoRepository {
         'descripcion': producto.descripcion,
         'categoria_id': producto.categoriaId,
         'precio': producto.precio,
+        'stock_actual': producto.stockActual,
         'stock_minimo': producto.stockMinimo,
         if (producto.codigoBarras != null) 'codigo_barras': producto.codigoBarras,
       },

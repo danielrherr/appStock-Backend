@@ -168,6 +168,11 @@ func UpdateProducto(id string, req *model.UpdateProductoRequest) (*model.Product
 		args = append(args, *req.Precio)
 		argNum++
 	}
+	if req.StockActual != nil {
+		sets = append(sets, fmt.Sprintf("stock_actual = $%d", argNum))
+		args = append(args, *req.StockActual)
+		argNum++
+	}
 	if req.StockMinimo != nil {
 		sets = append(sets, fmt.Sprintf("stock_minimo = $%d", argNum))
 		args = append(args, *req.StockMinimo)

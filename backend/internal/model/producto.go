@@ -32,11 +32,12 @@ type CreateProductoRequest struct {
 }
 
 type UpdateProductoRequest struct {
-	Codigo        *string `json:"codigo"`
-	CodigoBarras  *string `json:"codigo_barras"`
-	Nombre        *string `json:"nombre"`
-	Descripcion   *string `json:"descripcion"`
-	CategoriaID   *string `json:"categoria_id"`
+	Codigo        *string  `json:"codigo"`
+	CodigoBarras  *string  `json:"codigo_barras"`
+	Nombre        *string  `json:"nombre"`
+	Descripcion   *string  `json:"descripcion"`
+	CategoriaID   *string  `json:"categoria_id"`
 	Precio        *float64 `json:"precio"`
-	StockMinimo   *int    `json:"stock_minimo"`
+	StockActual   *int     `json:"stock_actual"`
+	StockMinimo   *int     `json:"stock_minimo"`
 }
