@@ -6,6 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 import '../productos/producto_list_screen.dart';
 import '../movimientos/movimiento_list_screen.dart';
+import '../scanner/barcode_scanner_screen.dart';
+import '../productos/producto_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -32,6 +34,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text('StockApp'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: _openScanner,
+            tooltip: 'Escanear código',
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {},
           ),
@@ -57,6 +64,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: _buildBody(),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openScanner,
+        icon: const Icon(Icons.qr_code_scanner),
+        label: const Text('Escanear'),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -197,6 +209,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openScanner() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BarcodeScannerScreen(
+          onProductFound: (producto) {
+            // Navegar al detalle del producto
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ProductoDetailScreen(producto: producto),
+              ),
+            );
+          },
+          autoPop: true,
         ),
       ),
     );

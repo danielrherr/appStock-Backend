@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/producto.dart';
 import '../../../domain/entities/movimiento.dart';
 import '../../../data/api/api_client.dart';
+import '../scanner/barcode_scanner_screen.dart';
 
 class MovimientoFormScreen extends StatefulWidget {
   final Producto? producto;
@@ -35,6 +36,23 @@ class _MovimientoFormScreenState extends State<MovimientoFormScreen> {
     _cantidadController.dispose();
     _motivoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _scanProduct() async {
+    final result = await Navigator.of(context).push<Producto>(
+      MaterialPageRoute(
+        builder: (_) => BarcodeScannerScreen(
+          onProductFound: (producto) {
+            Navigator.of(context).pop(producto);
+          },
+          autoPop: true,
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() => _selectedProducto = result);
+    }
   }
 
   Future<void> _save() async {
@@ -137,25 +155,36 @@ class _MovimientoFormScreenState extends State<MovimientoFormScreen> {
 
               // Producto
               if (widget.producto == null) ...[
-                // Selector de producto (simplificado)
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Producto *',
-                    prefixIcon: Icon(Icons.inventory_2),
-                    hintText: 'Selecciona un producto',
-                  ),
-                  readOnly: true,
-                  onTap: () {
-                    // Por ahora mostrar mensaje
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Selecciona el producto desde la lista'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Producto *',
+                          prefixIcon: Icon(Icons.inventory_2),
+                          hintText: 'Selecciona un producto',
+                        ),
+                        readOnly: true,
+                        onTap: () {
+                          // Por ahora mostrar mensaje
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Usa el botón de scanner para buscar'),
+                            ),
+                          );
+                        },
+                        controller: TextEditingController(
+                          text: _selectedProducto?.nombre ?? '',
+                        ),
                       ),
-                    );
-                  },
-                  controller: TextEditingController(
-                    text: _selectedProducto?.nombre ?? '',
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: _scanProduct,
+                      icon: const Icon(Icons.qr_code_scanner),
+                      tooltip: 'Escanear código de barras',
+                    ),
+                  ],
                 ),
               ] else ...[
                 Card(

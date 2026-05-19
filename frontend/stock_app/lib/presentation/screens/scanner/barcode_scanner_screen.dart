@@ -9,7 +9,16 @@ import '../productos/producto_form_screen.dart';
 import '../productos/producto_detail_screen.dart';
 
 class BarcodeScannerScreen extends StatefulWidget {
-  const BarcodeScannerScreen({super.key});
+  final Function(Producto)? onProductFound; // Callback cuando encuentra producto
+  final Function(String code, Producto? producto)? onCodeScanned; // Callback con código escaneado
+  final bool autoPop; // Si true, vuelve automáticamente después de encontrar
+
+  const BarcodeScannerScreen({
+    super.key,
+    this.onProductFound,
+    this.onCodeScanned,
+    this.autoPop = false,
+  });
 
   @override
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
@@ -52,9 +61,21 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       );
       final producto = ProductoModel.fromJson(response.data);
       setState(() => _foundProduct = producto);
+      
+      // Ejecutar callbacks
+      widget.onProductFound?.call(producto);
+      widget.onCodeScanned?.call(code, producto);
+      
+      // Si autoPop, volver automáticamente
+      if (widget.autoPop && mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       // Producto no encontrado - está OK
       setState(() => _foundProduct = null);
+      
+      // Ejecutar callback con null
+      widget.onCodeScanned?.call(code, null);
     }
   }
 
