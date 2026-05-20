@@ -37,7 +37,7 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>Imagen</th>
                             <th>Nombre</th>
                             <th>Categoría</th>
                             <th>Stock</th>
@@ -47,7 +47,7 @@
                         </tr>
                     </thead>
                     <tbody id="productosTable">
-                        <tr><td colspan="7" class="loading">Cargando...</td></tr>
+                        <tr><td colspan="8" class="loading">Cargando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -145,7 +145,7 @@
                 const tbody = document.getElementById('productosTable');
 
                 if (productos.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No hay productos</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No hay productos</td></tr>';
                     return;
                 }
 
@@ -167,9 +167,13 @@
 
                 tbody.innerHTML = filtered.map(p => {
                     const stock = p.stock_actual ?? p.stock ?? 0;
+                    const imgUrl = p.imagen ? (p.imagen.startsWith('http') ? p.imagen : p.imagen) : '';
+                    const imgHtml = imgUrl 
+                        ? `<img src="${imgUrl}" alt="producto" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">` 
+                        : '<span style="color:#999;">-</span>';
                     return `
                     <tr>
-                        <td>${p.codigo || p.id.substring(0, 8)}</td>
+                        <td>${imgHtml}</td>
                         <td>${p.nombre}</td>
                         <td>${p.categoria_nombre || '-'}</td>
                         <td>
