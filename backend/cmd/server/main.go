@@ -101,7 +101,9 @@ func main() {
 
 		// Categorías
 		r.Route("/api/v1/categorias", func(r chi.Router) {
+			r.Get("", categoriaHandler.GetAll)
 			r.Get("/", categoriaHandler.GetAll)
+			r.Post("", categoriaHandler.Create)
 			r.Post("/", categoriaHandler.Create)
 			r.Get("/{id}", categoriaHandler.GetByID)
 			r.Put("/{id}", categoriaHandler.Update)
@@ -110,7 +112,9 @@ func main() {
 
 		// Productos
 		r.Route("/api/v1/productos", func(r chi.Router) {
+			r.Get("", productoHandler.GetAll)
 			r.Get("/", productoHandler.GetAll)
+			r.Post("", productoHandler.Create)
 			r.Post("/", productoHandler.Create)
 			r.Get("/stock-bajo", productoHandler.GetStockBajo)
 			r.Get("/barcode/{codigo}", productoHandler.GetByBarcode)
@@ -122,14 +126,18 @@ func main() {
 
 		// Movimientos
 		r.Route("/api/v1/movimientos", func(r chi.Router) {
+			r.Get("", movimientoHandler.GetAll)
 			r.Get("/", movimientoHandler.GetAll)
+			r.Post("", movimientoHandler.Create)
 			r.Post("/", movimientoHandler.Create)
 			r.Get("/producto/{producto_id}", movimientoHandler.GetByProducto)
 		})
 
 		// Devices (Push Notifications)
 		r.Route("/api/v1/devices", func(r chi.Router) {
+			r.Post("", deviceHandler.Register)
 			r.Post("/", deviceHandler.Register)
+			r.Get("", deviceHandler.GetUserDevices)
 			r.Get("/", deviceHandler.GetUserDevices)
 			r.Delete("/{id}", deviceHandler.Delete)
 		})
