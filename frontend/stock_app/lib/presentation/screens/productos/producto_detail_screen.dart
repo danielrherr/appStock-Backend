@@ -13,6 +13,12 @@ class ProductoDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Resolver URL de imagen
+    String? imageUrl = producto.imagen;
+    if (imageUrl != null && imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+      imageUrl = 'https://appstock-backend1.onrender.com$imageUrl';
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(producto.nombre),
@@ -33,10 +39,6 @@ class ProductoDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Imagen
-            String? imageUrl = producto.imagen;
-            if (imageUrl != null && imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
-              imageUrl = 'https://appstock-backend1.onrender.com$imageUrl';
-            }
             if (imageUrl != null)
               Container(
                 width: double.infinity,
