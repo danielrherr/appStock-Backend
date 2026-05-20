@@ -87,6 +87,12 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Post("/api/v1/auth/register", authHandler.Register)
 		r.Post("/api/v1/auth/login", authHandler.Login)
+		
+		// Health check endpoint - useful for Render health checks
+		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"status":"ok"}`))
+		})
 	})
 
 	// Protected routes
