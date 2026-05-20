@@ -33,7 +33,11 @@ class ProductoDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Imagen
-            if (producto.imagen != null)
+            String? imageUrl = producto.imagen;
+            if (imageUrl != null && imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+              imageUrl = 'https://appstock-backend1.onrender.com$imageUrl';
+            }
+            if (imageUrl != null)
               Container(
                 width: double.infinity,
                 height: 200,
@@ -42,7 +46,7 @@ class ProductoDetailScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Image.network(
-                  producto.imagen!,
+                  imageUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => const Icon(
                     Icons.inventory_2,

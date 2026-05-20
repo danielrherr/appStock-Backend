@@ -89,11 +89,16 @@ class _ProductoListScreenState extends State<ProductoListScreen> {
               itemCount: provider.productos.length,
               itemBuilder: (context, index) {
                 final producto = provider.productos[index];
+                // Resolver URL de imagen
+                String? imageUrl = producto.imagen;
+                if (imageUrl != null && imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+                  imageUrl = 'https://appstock-backend1.onrender.com$imageUrl';
+                }
                 return Card(
                   child: ListTile(
-                    leading: producto.imagen != null
+                    leading: imageUrl != null
                         ? Image.network(
-                            producto.imagen!,
+                            imageUrl,
                             width: 48,
                             height: 48,
                             fit: BoxFit.cover,

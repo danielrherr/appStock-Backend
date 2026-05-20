@@ -15,6 +15,13 @@ class ProductoImagePicker extends StatelessWidget {
     required this.onImageSelected,
   });
 
+  String _resolveImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) return url;
+    // Asumimos que es una ruta relativa del backend
+    return 'https://appstock-backend1.onrender.com$url';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -48,13 +55,14 @@ class ProductoImagePicker extends StatelessWidget {
     }
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
+      final resolvedUrl = _resolveImageUrl(imageUrl);
       return Stack(
         fit: StackFit.expand,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
-              imageUrl!,
+              resolvedUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => _buildPlaceholder(context),
             ),
