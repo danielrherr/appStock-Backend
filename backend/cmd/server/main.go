@@ -65,7 +65,7 @@ func main() {
 	r.Use(appMiddleware.CORS)
 
 	// Chi middleware
-	r.Use(middleware.Logger)
+	r.Use(appMiddleware.RequestLogger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 
