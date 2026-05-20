@@ -91,12 +91,30 @@ class _ProductoFormScreenState extends State<ProductoFormScreen> {
     );
 
     final provider = context.read<ProductoProvider>();
-    bool success;
+    bool success = false;
+    String? productoId = widget.producto?.id;
 
     if (_isEditing) {
       success = await provider.updateProducto(producto);
     } else {
-      success = await provider.createProducto(producto);
+      final nuevoId = await provider.createProducto(producto);
+      success = nuevoId != null;
+      if (success) {
+        productoId = nuevoId;
+      }
+    }
+
+    // Subir imagen si hay una seleccionada
+    if (_selectedImage != null && productoId != null && productoId.isNotEmpty) {
+      final imagePath = await provider.uploadImagen(productoId, _selectedImage!.path);
+      if (imagePath != null && imagePath.isNotEmpty) {
+        // Actualizar el producto con la URL de la imagen
+        final productoConImagen = producto.copyWith(
+          id: productoId,
+          imagen: imagePath,
+        );
+        await provider.updateProducto(productoConImagen);
+      }
     }
 
     if (mounted) {

@@ -65,7 +65,7 @@ class ProductoProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> createProducto(Producto producto) async {
+  Future<String?> createProducto(Producto producto) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -75,12 +75,12 @@ class ProductoProvider extends ChangeNotifier {
       _productos.insert(0, nuevo);
       _isLoading = false;
       notifyListeners();
-      return true;
+      return nuevo.id;
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
 
