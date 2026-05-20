@@ -31,7 +31,7 @@ func Load() *Config {
 		DBPath:          getEnv("DB_PATH", "./stockapp.db"),
 		DatabaseURL:     databaseURL,
 		JWTSecret:       getEnv("JWT_SECRET", "stockapp-secret-key"),
-		UploadDir:       getEnv("UPLOAD_DIR", "./uploads"),
+		UploadDir:       getEnv("UPLOAD_DIR", "./backend/uploads"),
 		MaxOpenConns:   getEnvInt("DB_MAX_OPEN_CONNS", maxOpenConns),
 		MaxIdleConns:   getEnvInt("DB_MAX_IDLE_CONNS", maxIdleConns),
 		ConnMaxLifetime: getEnvInt("DB_CONN_MAX_LIFETIME", connMaxLifetime),
