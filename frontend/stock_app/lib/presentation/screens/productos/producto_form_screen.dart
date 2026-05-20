@@ -32,12 +32,12 @@ class _ProductoFormScreenState extends State<ProductoFormScreen> {
   File? _selectedImage;
   bool _isLoading = false;
 
-  bool get _isEditing => widget.producto != null;
+  bool get _isEditing => widget.producto != null && widget.producto!.id.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    if (_isEditing) {
+    if (widget.producto != null) {
       _codigoController.text = widget.producto!.codigo;
       _codigoBarrasController.text = widget.producto!.codigoBarras ?? '';
       _nombreController.text = widget.producto!.nombre;
