@@ -16,6 +16,11 @@ class ProductoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String? imageUrl = producto.imagen;
+    if (imageUrl != null && imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+      imageUrl = 'https://appstock-backend1.onrender.com$imageUrl';
+    }
+
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -33,11 +38,11 @@ class ProductoCard extends StatelessWidget {
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: producto.imagen != null
+                child: imageUrl != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          producto.imagen!,
+                          imageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => const Icon(
                             Icons.inventory_2,
