@@ -230,6 +230,12 @@ func CodigoExists(codigo string) (bool, error) {
 	return count > 0, err
 }
 
+func CodigoExistsForOtherProduct(codigo, id string) (bool, error) {
+	var count int
+	err := DB.QueryRow(`SELECT COUNT(*) FROM productos WHERE codigo = $1 AND id <> $2`, codigo, id).Scan(&count)
+	return count > 0, err
+}
+
 func GetProductoCountByCategoria(categoriaID string) (int, error) {
 	var count int
 	err := DB.QueryRow(`SELECT COUNT(*) FROM productos WHERE categoria_id = $1`, categoriaID).Scan(&count)

@@ -68,7 +68,7 @@ func (s *ProductoService) Update(id string, req *model.UpdateProductoRequest) (*
 
 	// Check codigo unique
 	if req.Codigo != nil {
-		exists, err := repository.CodigoExists(*req.Codigo)
+		exists, err := repository.CodigoExistsForOtherProduct(*req.Codigo, id)
 		if err != nil {
 			return nil, err
 		}
