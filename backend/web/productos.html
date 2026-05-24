@@ -37,17 +37,16 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Imagen</th>
                             <th>Nombre</th>
                             <th>Categoría</th>
                             <th>Stock</th>
-                            <th>Precio</th>
+                            <th>Stock Mínimo</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="productosTable">
-                        <tr><td colspan="8" class="loading">Cargando...</td></tr>
+                        <tr><td colspan="6" class="loading">Cargando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -92,10 +91,6 @@
                 <div class="form-group">
                     <label for="stock_minimo">Stock Mínimo</label>
                     <input type="number" id="stock_minimo" min="0" value="5">
-                </div>
-                <div class="form-group">
-                    <label for="precio">Precio</label>
-                    <input type="number" id="precio" step="0.01" min="0">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
@@ -145,7 +140,7 @@
                 const tbody = document.getElementById('productosTable');
 
                 if (productos.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No hay productos</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay productos</td></tr>';
                     return;
                 }
 
@@ -167,22 +162,26 @@
 
                 tbody.innerHTML = filtered.map(p => {
                     const stock = p.stock_actual ?? p.stock ?? 0;
-                    const imgUrl = p.imagen ? (p.imagen.startsWith('http') ? p.imagen : p.imagen) : '';
-                    const imgHtml = imgUrl 
-                        ? `<img src="${imgUrl}" alt="producto" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">` 
-                        : '<span style="color:#999;">-</span>';
+                    const stockMin = p.stock_minimo ?? 5;
+                    let estadoHtml = '';
+                    if (stock === 0) {
+                        estadoHtml = '<span class="badge badge-danger">Sin stock</span>';
+                    } else if (stock < stockMin) {
+                        estadoHtml = '<span class="badge badge-warning">En reposición</span>';
+                    } else {
+                        estadoHtml = '<span class="badge badge-success">En stock</span>';
+                    }
                     return `
                     <tr>
-                        <td>${imgHtml}</td>
                         <td>${p.nombre}</td>
                         <td>${p.categoria_nombre || '-'}</td>
                         <td>
-                            <span class="badge ${stock <= p.stock_minimo ? 'badge-warning' : 'badge-success'}">
+                            <span class="badge ${stock < stockMin ? 'badge-warning' : 'badge-success'}">
                                 ${stock}
                             </span>
                         </td>
-                        <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                        <td>${p.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'}</td>
+                        <td>${stockMin}</td>
+                        <td>${estadoHtml}</td>
                         <td class="actions">
                             <button class="edit-btn" onclick="editProducto('${p.id}')">Editar</button>
                             <button class="delete-btn" onclick="deleteProducto('${p.id}')">Eliminar</button>
@@ -211,7 +210,6 @@
                 document.getElementById('codigo_barras').value = producto.codigo_barras || producto.codigo_barra || '';
                 document.getElementById('stock_actual').value = producto.stock_actual ?? producto.stock ?? 0;
                 document.getElementById('stock_minimo').value = producto.stock_minimo || 5;
-                document.getElementById('precio').value = producto.precio || '';
             } else {
                 title.textContent = 'Nuevo Producto';
                 currentEditingId = null;
@@ -257,8 +255,7 @@
                 categoria_id: document.getElementById('categoria_id').value,
                 codigo_barras: document.getElementById('codigo_barras').value,
                 stock_actual: parseInt(document.getElementById('stock_actual').value),
-                stock_minimo: parseInt(document.getElementById('stock_minimo').value),
-                precio: parseFloat(document.getElementById('precio').value) || 0
+                stock_minimo: parseInt(document.getElementById('stock_minimo').value)
             };
 
             try {
