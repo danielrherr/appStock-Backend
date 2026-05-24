@@ -27,7 +27,7 @@ func CreateProducto(req *model.CreateProductoRequest) (*model.Producto, error) {
 func GetProductoByID(id string) (*model.Producto, error) {
 	var p model.Producto
 	err := DB.QueryRow(
-		`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, c.nombre, p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at 
+		`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, COALESCE(c.nombre, ''), p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at 
 		 FROM productos p 
 		 LEFT JOIN categorias c ON p.categoria_id = c.id 
 		 WHERE p.id = $1`, id,
@@ -42,7 +42,7 @@ func GetProductoByID(id string) (*model.Producto, error) {
 func GetProductoByCodigo(codigo string) (*model.Producto, error) {
 	var p model.Producto
 	err := DB.QueryRow(
-		`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, c.nombre, p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at 
+		`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, COALESCE(c.nombre, ''), p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at 
 		 FROM productos p 
 		 LEFT JOIN categorias c ON p.categoria_id = c.id 
 		 WHERE p.codigo = $1 OR p.codigo_barras = $1`, codigo,
@@ -88,7 +88,7 @@ func GetProductos(page, limit int, search, categoriaID string, stockBajo bool) (
 	}
 
 	// Get data - append LIMIT/OFFSET at the end
-	query := fmt.Sprintf(`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, c.nombre, p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at %s LIMIT $%d OFFSET $%d`, baseQuery, argNum, argNum+1)
+	query := fmt.Sprintf(`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, COALESCE(c.nombre, ''), p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at %s LIMIT $%d OFFSET $%d`, baseQuery, argNum, argNum+1)
 	args = append(args, limit, offset)
 	
 	rows, err := DB.Query(query, args...)
@@ -110,7 +110,7 @@ func GetProductos(page, limit int, search, categoriaID string, stockBajo bool) (
 
 func GetProductosStockBajo() ([]model.Producto, error) {
 	rows, err := DB.Query(
-		`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, c.nombre, p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at 
+		`SELECT p.id, p.codigo, p.codigo_barras, p.nombre, p.descripcion, p.categoria_id, COALESCE(c.nombre, ''), p.precio, p.stock_actual, p.stock_minimo, p.imagen, p.created_at, p.updated_at 
 		 FROM productos p 
 		 LEFT JOIN categorias c ON p.categoria_id = c.id 
 		 WHERE p.stock_actual < p.stock_minimo 
